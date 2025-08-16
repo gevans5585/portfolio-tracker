@@ -309,8 +309,9 @@ export class PortfolioAnalysisService {
                 let estimatedDailyChange = allocationChange * 2; // Approximation factor
                 
                 // Add some correlation with model performance
-                if (Math.abs(dailyChange) > 1) {
-                  estimatedDailyChange += dailyChange * 0.3; // Partial correlation
+                const modelDailyChange = todayModel.performance?.return1Month || 0;
+                if (Math.abs(modelDailyChange) > 1) {
+                  estimatedDailyChange += modelDailyChange * 0.3; // Partial correlation
                 }
                 
                 if (Math.abs(estimatedDailyChange) >= 5) {

@@ -85,7 +85,7 @@ export default function PortfolioCommentary() {
   };
 
   const parseCommentarysections = (commentary: string): { dailyData: string[], monthlyTrends: string[] } => {
-    const sections = { dailyData: [], monthlyTrends: [] };
+    const sections: { dailyData: string[], monthlyTrends: string[] } = { dailyData: [], monthlyTrends: [] };
     
     // Split commentary by the section headers
     const dailyDataMatch = commentary.match(/\*\*DAILY DATA:\*\*([\s\S]*?)(?=\*\*MONTHLY TRENDS:\*\*|$)/);

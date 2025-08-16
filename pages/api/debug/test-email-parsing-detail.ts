@@ -52,7 +52,7 @@ export default async function handler(
       if (rows.length < 2) continue;
       
       const headerRow = $(rows[0]);
-      const headers = headerRow.find('th, td').map((_, el) => $(el).text().trim()).get();
+      const headers = headerRow.find('th, td').map((_: number, el: any) => $(el).text().trim()).get();
       
       const tableData = {
         tableIndex: i,
@@ -64,7 +64,7 @@ export default async function handler(
       // Get first data row
       if (rows.length > 1) {
         const firstDataRow = $(rows[1]);
-        const cells = firstDataRow.find('td, th').map((_, el) => $(el).text().trim()).get();
+        const cells = firstDataRow.find('td, th').map((_: number, el: any) => $(el).text().trim()).get();
         tableData.firstRowData = cells;
       }
       

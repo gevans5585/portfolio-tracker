@@ -34,7 +34,7 @@ export default async function handler(
     
     // Test individual keyword matches
     const performanceKeywords = ['final equity', 'ret. ytd', 'ret. 1mo', 'sharpe', 'cagr', 'portfolio', 'name'];
-    const keywordMatches = {};
+    const keywordMatches: { [key: string]: boolean } = {};
     let matchCount = 0;
     
     for (const keyword of performanceKeywords) {
@@ -48,7 +48,7 @@ export default async function handler(
     
     // Test holdings keywords
     const holdingsKeywords = ['symbol', 'quantity', 'price', 'value', 'shares', 'position', 'market value'];
-    const holdingsMatches = {};
+    const holdingsMatches: { [key: string]: boolean } = {};
     let holdingsMatchCount = 0;
     
     for (const keyword of holdingsKeywords) {

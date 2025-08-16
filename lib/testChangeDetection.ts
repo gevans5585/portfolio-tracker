@@ -67,7 +67,7 @@ export async function testChangeDetectionFix() {
     // Find removed securities (symbols that disappeared)
     for (const yesterdaySymbol of yesterdaySymbols) {
       if (!todaySymbols.includes(yesterdaySymbol)) {
-        const removedHolding = yesterdayHoldings.find(h => h.startsWith(yesterdaySymbol));
+        const removedHolding = yesterdayHoldings.find((h: string) => h.startsWith(yesterdaySymbol));
         if (removedHolding) {
           removedHoldings.push(removedHolding);
         }
@@ -77,7 +77,7 @@ export async function testChangeDetectionFix() {
     // Find added securities (new symbols)
     for (const todaySymbol of todaySymbols) {
       if (!yesterdaySymbols.includes(todaySymbol)) {
-        const addedHolding = todayHoldings.find(h => h.startsWith(todaySymbol));
+        const addedHolding = todayHoldings.find((h: string) => h.startsWith(todaySymbol));
         if (addedHolding) {
           addedHoldings.push(addedHolding);
         }

@@ -101,7 +101,7 @@ export class GmailIMAPService {
         });
       });
 
-      imap.once('error', (err) => {
+      imap.once('error', (err: Error) => {
         console.error('IMAP connection error:', err);
         reject(err);
       });
@@ -206,7 +206,7 @@ export class GmailIMAPService {
         });
       });
 
-      imap.once('error', (err) => {
+      imap.once('error', (err: Error) => {
         console.error('IMAP test connection failed:', err);
         resolve({
           success: false,

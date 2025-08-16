@@ -5,11 +5,22 @@ export class GoogleSheetsService {
   private sheets;
 
   constructor() {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE,
+    const authOptions: any = {
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
+    };
 
+    // Support both file-based and environment variable-based service account keys
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      // Parse the JSON string from environment variable
+      authOptions.credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+    } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE) {
+      // Use file path (for local development)
+      authOptions.keyFile = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE;
+    } else {
+      throw new Error('No Google service account credentials configured');
+    }
+
+    const auth = new google.auth.GoogleAuth(authOptions);
     this.sheets = google.sheets({ version: 'v4', auth });
   }
 

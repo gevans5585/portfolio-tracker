@@ -1,4 +1,4 @@
-import { PortfolioAnalysisData, SignificantMove, UnderperformingModel } from './portfolioAnalysisService';
+import { PortfolioAnalysisData, SignificantMove, UnderperformingModel, DailyModelMove, DailySecurityMove } from './portfolioAnalysisService';
 
 export interface CommentaryResponse {
   commentary: string;

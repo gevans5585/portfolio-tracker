@@ -93,7 +93,7 @@ export default async function handler(
         const rows = table.find('tr');
         if (rows.length >= 1) {
           const headerRow = $(rows[0]);
-          const headers = headerRow.find('th, td').map((_, el) => 
+          const headers = headerRow.find('th, td').map((_: number, el: any) => 
             $(el).text().trim().toLowerCase()
           ).get();
           

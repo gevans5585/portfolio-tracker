@@ -40,7 +40,22 @@ export default async function handler(
       
       console.log(`\nTable ${i}: Found ${rows.length} rows`);
       
-      const tableInfo = {
+      const tableInfo: {
+        tableIndex: number;
+        rowCount: number;
+        rows: Array<{
+          rowIndex: number;
+          cellCount: number;
+          cells: Array<{
+            cellIndex: number;
+            text: string;
+            html: string;
+            hasNestedTable: boolean;
+            colspan: string;
+            rowspan: string;
+          }>;
+        }>;
+      } = {
         tableIndex: i,
         rowCount: rows.length,
         rows: []
@@ -51,7 +66,18 @@ export default async function handler(
         const row = $(rows[j]);
         const cells = row.find('td, th');
         
-        const rowInfo = {
+        const rowInfo: {
+          rowIndex: number;
+          cellCount: number;
+          cells: Array<{
+            cellIndex: number;
+            text: string;
+            html: string;
+            hasNestedTable: boolean;
+            colspan: string;
+            rowspan: string;
+          }>;
+        } = {
           rowIndex: j,
           cellCount: cells.length,
           cells: []

@@ -26,7 +26,7 @@ interface CombinedAccountResponse {
 
 export default function CombinedAccountPage() {
   const params = useParams();
-  const baseAccountName = decodeURIComponent(params.accountName as string);
+  const baseAccountName = decodeURIComponent((params?.accountName as string) || '');
   
   const [accountData, setAccountData] = useState<CombinedAccountResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,7 +177,7 @@ export default function CombinedAccountPage() {
             `Today's Trades (${new Date().toISOString().split('T')[0]})` : 
             `No Trades Today (${new Date().toISOString().split('T')[0]})`,
           subtitle: accountData?.account.changes?.hasChanges ? 
-            `${accountData.account.changes.changeCount} changes verified` : 
+            `${(accountData.account.changes.addedHoldings?.length || 0) + (accountData.account.changes.removedHoldings?.length || 0)} changes verified` : 
             'Positions verified unchanged'
         };
       case 'warning':

@@ -9,8 +9,9 @@ export default async function handler(
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  const { account, date } = req.query;
+  
   try {
-    const { account, date } = req.query;
     
     if (!account) {
       return res.status(400).json({ 

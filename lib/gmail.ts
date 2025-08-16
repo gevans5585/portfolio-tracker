@@ -14,9 +14,19 @@ export class GmailService {
       this.imapService = new GmailIMAPService();
     } else {
       const authOptions: any = {
-        keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE,
         scopes: ['https://www.googleapis.com/auth/gmail.readonly'],
       };
+
+      // Support both file-based and environment variable-based service account keys
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+        // Parse the JSON string from environment variable
+        authOptions.credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+      } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE) {
+        // Use file path (for local development)
+        authOptions.keyFile = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE;
+      } else {
+        throw new Error('No Google service account credentials configured');
+      }
 
       // Add subject for domain-wide delegation if specified
       if (process.env.GMAIL_USER_EMAIL) {
@@ -39,6 +49,10 @@ export class GmailService {
       console.log('Using Gmail API for portfolio emails');
       const query = this.buildSearchQuery(dateFrom, dateTo);
       
+      if (!this.gmail) {
+        throw new Error('Gmail API not initialized');
+      }
+      
       const response = await this.gmail.users.messages.list({
         userId: 'me',
         q: query,
@@ -51,6 +65,9 @@ export class GmailService {
 
       const emails = await Promise.all(
         response.data.messages.map(async (message) => {
+          if (!this.gmail) {
+            throw new Error('Gmail API not initialized');
+          }
           const emailData = await this.gmail.users.messages.get({
             userId: 'me',
             id: message.id!,
@@ -122,6 +139,10 @@ export class GmailService {
       if (this.imapService) {
         console.warn('getEmailById not supported with IMAP, requires Gmail API');
         throw new Error('getEmailById not supported with IMAP service');
+      }
+
+      if (!this.gmail) {
+        throw new Error('Gmail API not initialized');
       }
 
       const response = await this.gmail.users.messages.get({
