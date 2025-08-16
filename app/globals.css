@@ -1,0 +1,402 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Evans Family Wealth Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Evans Family Wealth Corporate Colors */
+  --evans-primary: #54656D;      /* Dark gray-blue - headers, primary text */
+  --evans-bg: #F0F4F5;          /* Light background */
+  --evans-secondary: #C2C7C9;   /* Medium gray - borders, secondary text */
+  
+  /* Data Colors */
+  --success: #28A745;   /* Green for positive returns */
+  --danger: #DC3545;    /* Red for negative returns */
+  --warning: #FFC107;   /* Orange for warnings */
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--evans-primary) 0%, #4a5a62 100%);
+  --gradient-card: linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(240,244,245,0.3) 100%);
+}
+
+/* Base Styles */
+* {
+  transition: all 0.3s ease;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--evans-bg);
+  color: var(--evans-primary);
+}
+
+/* Custom Tailwind Components */
+@layer components {
+  /* Evans Family Wealth Buttons */
+  .btn-evans {
+    @apply px-6 py-3 rounded-lg font-medium text-white shadow-lg transform hover:scale-105 transition-all duration-300;
+    background: var(--gradient-primary);
+  }
+  
+  .btn-evans:hover {
+    @apply shadow-xl;
+    filter: brightness(1.1);
+  }
+  
+  /* Fintech Cards */
+  .card-fintech {
+    @apply rounded-2xl shadow-lg border hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300;
+    background: linear-gradient(145deg, var(--evans-secondary) 0%, #E5E8EA 50%, #ffffff 100%);
+    border-color: var(--evans-primary);
+    backdrop-filter: blur(10px);
+  }
+  
+  .card-fintech:hover {
+    border-color: var(--evans-secondary);
+  }
+  
+  /* Performance Pills */
+  .pill-success {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background-color: rgba(40, 167, 69, 0.1);
+    color: var(--success);
+  }
+  
+  .pill-danger {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--danger);
+  }
+  
+  .pill-warning {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--warning);
+  }
+  
+  /* Progress Bars */
+  .progress-bar {
+    @apply w-full bg-gray-200 rounded-full h-2 overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-1000 ease-out;
+    background: linear-gradient(90deg, var(--success) 0%, #20c997 100%);
+  }
+  
+  /* Sparkline Container */
+  .sparkline-container {
+    @apply relative w-20 h-8;
+  }
+  
+  /* Accordion */
+  .accordion-header {
+    @apply flex items-center justify-between w-full px-6 py-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200;
+  }
+  
+  .accordion-content {
+    @apply overflow-hidden transition-all duration-300;
+  }
+  
+  .accordion-content.collapsed {
+    max-height: 0;
+  }
+  
+  .accordion-content.expanded {
+    max-height: 500px;
+  }
+}
+
+/* Custom Tailwind Utilities */
+@layer utilities {
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .bg-evans-primary {
+    background-color: var(--evans-primary);
+  }
+  
+  .bg-evans-bg {
+    background-color: var(--evans-bg);
+  }
+  
+  .bg-evans-secondary {
+    background-color: var(--evans-secondary);
+  }
+  
+  .text-evans-primary {
+    color: var(--evans-primary);
+  }
+  
+  .text-evans-secondary {
+    color: var(--evans-secondary);
+  }
+  
+  .border-evans-secondary {
+    border-color: var(--evans-secondary);
+  }
+  
+  /* Performance Colors */
+  .text-success {
+    color: var(--success);
+  }
+  
+  .text-danger {
+    color: var(--danger);
+  }
+  
+  .text-warning {
+    color: var(--warning);
+  }
+  
+  .bg-success {
+    background-color: var(--success);
+  }
+  
+  .bg-danger {
+    background-color: var(--danger);
+  }
+  
+  .bg-warning {
+    background-color: var(--warning);
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-success {
+  0%, 100% {
+    background-color: rgba(40, 167, 69, 0.1);
+  }
+  50% {
+    background-color: rgba(40, 167, 69, 0.2);
+  }
+}
+
+@keyframes pulse-danger {
+  0%, 100% {
+    background-color: rgba(220, 53, 69, 0.1);
+  }
+  50% {
+    background-color: rgba(220, 53, 69, 0.2);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.4s ease forwards;
+}
+
+.animate-pulse-success {
+  animation: pulse-success 2s ease-in-out infinite;
+}
+
+.animate-pulse-danger {
+  animation: pulse-danger 2s ease-in-out infinite;
+}
+
+/* Ripple Effect for Buttons */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+  .card-fintech {
+    @apply hover:scale-100; /* Disable hover scale on mobile */
+    padding: 1.5rem 1rem; /* Reduce padding on mobile */
+  }
+  
+  .btn-evans {
+    @apply hover:scale-100; /* Disable hover scale on mobile */
+    @apply px-4 py-2; /* Smaller buttons on mobile */
+  }
+  
+  /* Responsive header branding */
+  header .max-w-7xl {
+    @apply py-4; /* Reduce header padding on mobile */
+  }
+  
+  header h1 {
+    @apply text-3xl; /* Scale down company name on mobile */
+  }
+  
+  header img {
+    height: 2.5rem !important; /* Scale down logo on mobile */
+  }
+  
+  header .flex.items-center.space-x-6 {
+    @apply space-x-4; /* Reduce spacing on mobile */
+  }
+  
+  /* Mobile-friendly spacing */
+  .space-y-8 > * + * {
+    margin-top: 1.5rem !important;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+  
+  /* Touch-friendly interactions */
+  .accordion-header {
+    @apply py-6; /* Larger touch targets */
+  }
+}
+
+@media (max-width: 640px) {
+  /* Extra small screens */
+  .card-fintech {
+    margin: 0.5rem 0;
+    border-radius: 1rem; /* Smaller border radius */
+  }
+  
+  /* Extra small screen header adjustments */
+  header h1 {
+    @apply text-2xl; /* Even smaller company name on very small screens */
+  }
+  
+  header img {
+    height: 2rem !important; /* Even smaller logo on very small screens */
+  }
+  
+  header .flex.items-center.space-x-6 {
+    @apply space-x-3; /* Minimal spacing on very small screens */
+  }
+  
+  header p {
+    @apply text-sm; /* Smaller subtitle text */
+  }
+  
+  /* Single column layout for very small screens */
+  .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  
+  /* Responsive sparklines */
+  .sparkline-container {
+    width: 40px !important;
+    height: 16px !important;
+  }
+}
+
+/* Enhanced animation sequences */
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 0.6s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.6s ease-out forwards;
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* Staggered animation delays */
+.animate-stagger-1 {
+  animation-delay: 0.1s;
+}
+
+.animate-stagger-2 {
+  animation-delay: 0.2s;
+}
+
+.animate-stagger-3 {
+  animation-delay: 0.3s;
+}
+
+.animate-stagger-4 {
+  animation-delay: 0.4s;
+}
+
+/* Smooth transitions for all interactive elements */
+.card-fintech, .btn-evans, .accordion-header {
+  will-change: transform;
+  backface-visibility: hidden;
+}

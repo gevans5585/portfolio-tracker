@@ -1,0 +1,19 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/daily-portfolio",
+      "schedule": "0 9 * * 1-5"
+    }
+  ],
+  "functions": {
+    "pages/api/cron/daily-portfolio.ts": {
+      "maxDuration": 300
+    },
+    "pages/api/process-portfolio.ts": {
+      "maxDuration": 300
+    },
+    "pages/api/dashboard-data.ts": {
+      "maxDuration": 60
+    }
+  }
+}
