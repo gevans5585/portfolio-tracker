@@ -271,6 +271,9 @@ export class EmailSummaryGenerator {
         <div class="header">
             <h1>📊 Daily Portfolio Summary</h1>
             <div class="date">${date}</div>
+            <div style="margin-top: 10px; font-size: 16px; color: #2c3e50; font-weight: 600;">
+                Evans Family Wealth
+            </div>
         </div>
         
         <div class="summary-cards">
@@ -303,7 +306,16 @@ export class EmailSummaryGenerator {
         </div>
         
         <div class="footer">
-            Generated on ${new Date().toLocaleString()} by Portfolio Tracker
+            <p>Generated on ${new Date().toLocaleString()} by Evans Family Wealth Portfolio Tracker</p>
+            <p style="margin-top: 15px;">
+                <a href="${process.env.VERCEL_URL || 'https://portfolio-tracker-iygxspgfx-glen-evans-projects.vercel.app'}" 
+                   style="background: #2c3e50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    📊 View Live Portfolio Dashboard
+                </a>
+            </p>
+            <p style="margin-top: 10px; font-size: 12px; color: #888;">
+                Trade status, detailed holdings, and real-time performance metrics
+            </p>
         </div>
     </div>
 </body>
