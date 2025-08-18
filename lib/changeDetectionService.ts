@@ -1,6 +1,7 @@
 import { AccountPortfolioService, AccountPortfolio } from './accountPortfolioService';
 import { PortfolioChange, ChangeAlert } from '../types';
 import { GoogleSheetsService } from './googleSheets';
+import { BusinessDayUtils } from './businessDayUtils';
 
 export class ChangeDetectionService {
   private accountService: AccountPortfolioService;
@@ -14,31 +15,45 @@ export class ChangeDetectionService {
   async detectChanges(todayDate?: string): Promise<ChangeAlert> {
     try {
       const today = todayDate || new Date().toISOString().split('T')[0];
-      const yesterday = this.getYesterdayDate(today);
+      
+      // Check if today is a trading day
+      if (!BusinessDayUtils.isTradingDay(today)) {
+        console.log(`${today} is not a trading day - ${BusinessDayUtils.getNoChangeReason(today)}`);
+        return {
+          hasChanges: false,
+          totalChanges: 0,
+          changes: [],
+          affectedAccounts: [],
+          date: today,
+          message: BusinessDayUtils.getNoChangeReason(today),
+          comparisonDate: null
+        };
+      }
 
-      console.log(`Detecting changes between ${yesterday} and ${today}`);
+      const previousTradingDay = BusinessDayUtils.getPreviousTradingDay(today);
+      console.log(`Detecting changes between ${previousTradingDay} (previous trading day) and ${today}`);
 
-      // Get portfolio data for both days
-      const [todayPortfolios, yesterdayPortfolios] = await Promise.all([
+      // Get portfolio data for both trading days
+      const [todayPortfolios, previousPortfolios] = await Promise.all([
         this.accountService.getAccountPortfolios(today),
-        this.accountService.getAccountPortfolios(yesterday)
+        this.accountService.getAccountPortfolios(previousTradingDay)
       ]);
 
-      console.log(`Today: ${todayPortfolios.length} accounts, Yesterday: ${yesterdayPortfolios.length} accounts`);
+      console.log(`Today: ${todayPortfolios.length} accounts, Previous trading day (${previousTradingDay}): ${previousPortfolios.length} accounts`);
 
       const changes: PortfolioChange[] = [];
       const affectedAccounts: string[] = [];
 
       // Compare each account
       for (const todayAccount of todayPortfolios) {
-        const yesterdayAccount = yesterdayPortfolios.find(ya => ya.accountName === todayAccount.accountName);
+        const previousAccount = previousPortfolios.find(ya => ya.accountName === todayAccount.accountName);
 
         // Check each model in today's account
         for (const todayModel of todayAccount.models) {
-          const yesterdayModel = yesterdayAccount?.models.find(ym => ym.name === todayModel.name);
+          const previousModel = previousAccount?.models.find(ym => ym.name === todayModel.name);
 
           // Detect changes for this model
-          const modelChanges = this.compareModelHoldings(todayModel, yesterdayModel, todayAccount.accountName, today);
+          const modelChanges = this.compareModelHoldings(todayModel, previousModel, todayAccount.accountName, today);
           
           if (modelChanges.addedHoldings.length > 0 || modelChanges.removedHoldings.length > 0) {
             changes.push(modelChanges);
@@ -49,20 +64,20 @@ export class ChangeDetectionService {
           }
         }
 
-        // Also check for models that existed yesterday but not today (completely removed models)
-        if (yesterdayAccount) {
-          for (const yesterdayModel of yesterdayAccount.models) {
-            const todayModelExists = todayAccount.models.find(tm => tm.name === yesterdayModel.name);
+        // Also check for models that existed on previous trading day but not today (completely removed models)
+        if (previousAccount) {
+          for (const previousModel of previousAccount.models) {
+            const todayModelExists = todayAccount.models.find(tm => tm.name === previousModel.name);
             
             if (!todayModelExists) {
               // Entire model was removed
-              const allYesterdayHoldings = this.extractHoldingsFromPortfolio(yesterdayModel.performance.portfolio);
+              const allPreviousHoldings = this.extractHoldingsFromPortfolio(previousModel.performance.portfolio);
               
               changes.push({
-                modelName: yesterdayModel.name,
+                modelName: previousModel.name,
                 accountName: todayAccount.accountName,
                 addedHoldings: [],
-                removedHoldings: allYesterdayHoldings,
+                removedHoldings: allPreviousHoldings,
                 date: today
               });
               
@@ -83,10 +98,15 @@ export class ChangeDetectionService {
       });
 
       const changeAlert: ChangeAlert = {
+        hasChanges: changes.length > 0,
         changes,
         totalChanges: changes.length,
         affectedAccounts: affectedAccounts.sort(),
-        date: today
+        date: today,
+        comparisonDate: previousTradingDay,
+        message: changes.length > 0 ? 
+          `Found ${changes.length} changes compared to previous trading day (${previousTradingDay})` :
+          `No changes detected compared to previous trading day (${previousTradingDay})`
       };
 
       console.log(`Change detection complete: ${changes.length} changes across ${affectedAccounts.length} accounts`);
@@ -200,10 +220,4 @@ export class ChangeDetectionService {
     return symbols;
   }
 
-  private getYesterdayDate(todayDate: string): string {
-    const today = new Date(todayDate);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
-  }
 }

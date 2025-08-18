@@ -48,10 +48,13 @@ export interface PortfolioChange {
 }
 
 export interface ChangeAlert {
+  hasChanges: boolean;
   changes: PortfolioChange[];
   totalChanges: number;
   affectedAccounts: string[];
   date: string;
+  comparisonDate: string | null; // The previous trading day we compared against, or null if no comparison
+  message?: string; // Human-readable explanation (e.g., "Markets closed - Weekend")
 }
 
 export interface AccountMapping {

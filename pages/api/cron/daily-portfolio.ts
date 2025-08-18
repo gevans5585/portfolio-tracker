@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PortfolioService } from '@/lib/portfolioService';
 import { EmailSummaryGenerator } from '@/lib/emailGenerator';
+import { BusinessDayUtils } from '@/lib/businessDayUtils';
 import nodemailer from 'nodemailer';
 
 // This endpoint will be called by Vercel Cron Jobs
@@ -15,10 +16,26 @@ export default async function handler(
   }
 
   try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Check if today is a trading day
+    if (!BusinessDayUtils.shouldSendDailyEmail(today)) {
+      console.log(`${today} is not a trading day - ${BusinessDayUtils.getNoChangeReason(today)}. Skipping email.`);
+      return res.status(200).json({
+        success: true,
+        message: `Daily processing skipped - ${BusinessDayUtils.getNoChangeReason(today)}`,
+        timestamp: new Date().toISOString(),
+        data: {
+          tradingDay: false,
+          reason: BusinessDayUtils.getNoChangeReason(today)
+        },
+      });
+    }
+
     const portfolioService = new PortfolioService();
     const emailGenerator = new EmailSummaryGenerator();
 
-    console.log('Starting daily portfolio processing...');
+    console.log('Starting daily portfolio processing for trading day...');
 
     // Get portfolio summary
     const summary = await portfolioService.getPortfolioSummary();
