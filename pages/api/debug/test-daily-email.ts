@@ -33,7 +33,7 @@ export default async function handler(
     // Test SMTP connection
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
       try {
-        const transporter = nodemailer.createTransporter({
+        const transporter = nodemailer.createTransport({
           host: process.env.SMTP_HOST,
           port: parseInt(process.env.SMTP_PORT || '587'),
           secure: process.env.SMTP_SECURE === 'true',
@@ -89,7 +89,7 @@ export default async function handler(
       // Optionally send test email if requested
       if (req.query.send === 'true' && process.env.SMTP_HOST && process.env.PORTFOLIO_SUMMARY_EMAIL) {
         try {
-          const transporter = nodemailer.createTransporter({
+          const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
             port: parseInt(process.env.SMTP_PORT || '587'),
             secure: process.env.SMTP_SECURE === 'true',
