@@ -9,15 +9,32 @@ export class GoogleSheetsService {
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     };
 
-    // Support both file-based and environment variable-based service account keys
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
-      // Parse the JSON string from environment variable
-      authOptions.credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+    // Support multiple credential formats
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64) {
+      // Decode Base64 encoded service account key (recommended for Vercel)
+      try {
+        const decodedKey = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64, 'base64').toString('utf-8');
+        authOptions.credentials = JSON.parse(decodedKey);
+      } catch (error) {
+        throw new Error('Failed to decode Base64 service account key: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+    } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      // Parse the JSON string from environment variable (with line break handling)
+      try {
+        // Handle potential line breaks and formatting issues from Vercel UI
+        const cleanedKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+          .replace(/\n/g, '')
+          .replace(/\r/g, '')
+          .trim();
+        authOptions.credentials = JSON.parse(cleanedKey);
+      } catch (error) {
+        throw new Error('Failed to parse service account key JSON: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
     } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE) {
       // Use file path (for local development)
       authOptions.keyFile = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE;
     } else {
-      throw new Error('No Google service account credentials configured');
+      throw new Error('No Google service account credentials configured. Please set GOOGLE_SERVICE_ACCOUNT_KEY_BASE64, GOOGLE_SERVICE_ACCOUNT_KEY, or GOOGLE_SERVICE_ACCOUNT_KEY_FILE');
     }
 
     const auth = new google.auth.GoogleAuth(authOptions);

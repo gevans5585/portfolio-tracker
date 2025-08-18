@@ -14,12 +14,16 @@ export default async function handler(
 
     const debug = {
       environmentCheck: {
+        hasServiceAccountKeyBase64: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64,
         hasServiceAccountKey: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
         hasServiceAccountKeyFile: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE,
         hasSheetId: !!process.env.ACCOUNT_MAPPINGS_SHEET_ID,
         sheetId: process.env.ACCOUNT_MAPPINGS_SHEET_ID ? 
           process.env.ACCOUNT_MAPPINGS_SHEET_ID.substring(0, 20) + '...' : 'Not set',
         sheetRange: process.env.ACCOUNT_MAPPINGS_RANGE || 'Sheet1!A:D (default)',
+        credentialMethod: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 ? 'Base64' :
+                         process.env.GOOGLE_SERVICE_ACCOUNT_KEY ? 'JSON String' :
+                         process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE ? 'File Path' : 'None'
       },
       testResults: {} as any
     };
@@ -73,19 +77,48 @@ export default async function handler(
       }
     }
 
-    // Test credential parsing if available
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    // Test credential parsing based on available method
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64) {
       try {
-        const parsed = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+        const decodedKey = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64, 'base64').toString('utf-8');
+        const parsed = JSON.parse(decodedKey);
         debug.testResults.credentialParsing = {
+          method: 'Base64',
           success: true,
-          hasRequiredFields: !!(parsed.type && parsed.project_id && parsed.private_key && parsed.client_email)
+          hasRequiredFields: !!(parsed.type && parsed.project_id && parsed.private_key && parsed.client_email),
+          projectId: parsed.project_id,
+          clientEmail: parsed.client_email
         };
       } catch (error) {
         debug.testResults.credentialParsing = {
+          method: 'Base64',
+          success: false,
+          error: error instanceof Error ? error.message : 'Base64 decode or JSON parsing failed',
+          base64Length: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64.length
+        };
+      }
+    } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      try {
+        const cleanedKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+          .replace(/\n/g, '')
+          .replace(/\r/g, '')
+          .trim();
+        const parsed = JSON.parse(cleanedKey);
+        debug.testResults.credentialParsing = {
+          method: 'JSON String',
+          success: true,
+          hasRequiredFields: !!(parsed.type && parsed.project_id && parsed.private_key && parsed.client_email),
+          projectId: parsed.project_id,
+          clientEmail: parsed.client_email
+        };
+      } catch (error) {
+        debug.testResults.credentialParsing = {
+          method: 'JSON String',
           success: false,
           error: error instanceof Error ? error.message : 'JSON parsing failed',
-          credentialLength: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.length
+          credentialLength: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.length,
+          hasLineBreaks: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.includes('\n'),
+          preview: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.substring(0, 100) + '...'
         };
       }
     }
