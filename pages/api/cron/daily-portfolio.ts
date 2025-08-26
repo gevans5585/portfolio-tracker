@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { PortfolioService } from '@/lib/portfolioService';
 import { EmailSummaryGenerator } from '@/lib/emailGenerator';
 import { BusinessDayUtils } from '@/lib/businessDayUtils';
+import { TimezoneUtils } from '@/lib/timezoneUtils';
 import nodemailer from 'nodemailer';
 
 // This endpoint will be called by Vercel Cron Jobs
@@ -16,7 +17,16 @@ export default async function handler(
   }
 
   try {
-    const today = new Date().toISOString().split('T')[0];
+    // Add timezone debugging and validation
+    TimezoneUtils.logTimezoneDebug();
+    
+    // Validate we're running during business hours
+    if (!TimezoneUtils.isBusinessHours()) {
+      console.warn('TIMEZONE WARNING: Running outside business hours!');
+    }
+    
+    const today = TimezoneUtils.getCurrentESTDateString();
+    console.log(`Processing portfolio for EST date: ${today}`);
     
     // Check if today is a trading day
     if (!BusinessDayUtils.shouldSendDailyEmail(today)) {
@@ -25,6 +35,7 @@ export default async function handler(
         success: true,
         message: `Daily processing skipped - ${BusinessDayUtils.getNoChangeReason(today)}`,
         timestamp: new Date().toISOString(),
+        estTime: TimezoneUtils.getCurrentESTString(),
         data: {
           tradingDay: false,
           reason: BusinessDayUtils.getNoChangeReason(today)
@@ -86,19 +97,23 @@ async function sendSummaryEmail(htmlContent: string, textContent: string, summar
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: process.env.SMTP_USER || process.env.GMAIL_USER_EMAIL,
+      pass: process.env.SMTP_PASS || process.env.GMAIL_PASSWORD,
     },
   });
 
-  const date = new Date().toLocaleDateString();
-  const changeIndicator = summary.totalDayChange >= 0 ? '📈' : '📉';
-  const changeAmount = Math.abs(summary.totalDayChange).toFixed(2);
+  const date = TimezoneUtils.getDateStringEST();
+  const emailGenerator = new EmailSummaryGenerator();
+  const weightedReturn = summary.comparisons ? 
+    emailGenerator.calculateWeightedDayChange(summary.comparisons) : 
+    summary.totalDayChangePercent;
+  const changeIndicator = weightedReturn >= 0 ? '📈' : '📉';
+  const changePercent = Math.abs(weightedReturn).toFixed(2);
   
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: process.env.PORTFOLIO_SUMMARY_EMAIL,
-    subject: `${changeIndicator} Daily Portfolio Summary - ${date} (${summary.totalDayChange >= 0 ? '+' : '-'}$${changeAmount})`,
+    subject: `${changeIndicator} Daily Portfolio Summary - ${date} (${weightedReturn >= 0 ? '+' : ''}${changePercent}%)`,
     text: textContent,
     html: htmlContent,
   });
@@ -110,23 +125,23 @@ async function sendErrorNotification(error: any) {
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: process.env.SMTP_USER || process.env.GMAIL_USER_EMAIL,
+      pass: process.env.SMTP_PASS || process.env.GMAIL_PASSWORD,
     },
   });
 
-  const date = new Date().toLocaleDateString();
+  const date = TimezoneUtils.getDateStringEST();
   const errorMessage = error instanceof Error ? error.message : 'Unknown error';
   
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: process.env.ERROR_NOTIFICATION_EMAIL,
     subject: `🚨 Portfolio Tracker Error - ${date}`,
-    text: `An error occurred during daily portfolio processing:\n\n${errorMessage}\n\nTimestamp: ${new Date().toISOString()}`,
+    text: `An error occurred during daily portfolio processing:\n\n${errorMessage}\n\nEST Time: ${TimezoneUtils.getCurrentESTString()}\nUTC Time: ${new Date().toISOString()}`,
     html: `
       <h2>🚨 Portfolio Tracker Error</h2>
       <p><strong>Date:</strong> ${date}</p>
-      <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
+      <p><strong>EST Time:</strong> ${TimezoneUtils.getCurrentESTString()}</p>
       <p><strong>Error:</strong></p>
       <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${errorMessage}</pre>
     `,

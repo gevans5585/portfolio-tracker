@@ -245,7 +245,9 @@ export class PortfolioService {
   }
 
   private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    // Convert to EST before formatting to ensure correct date
+    const estDate = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    return estDate.toISOString().split('T')[0];
   }
 
   private getPreviousBusinessDay(date: Date): Date {

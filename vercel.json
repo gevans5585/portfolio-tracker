@@ -2,9 +2,12 @@
   "crons": [
     {
       "path": "/api/cron/daily-portfolio",
-      "schedule": "30 9 * * 1-5"
+      "schedule": "30 14 * * 1-5"
     }
   ],
+  "env": {
+    "TZ": "America/New_York"
+  },
   "functions": {
     "pages/api/cron/daily-portfolio.ts": {
       "maxDuration": 300

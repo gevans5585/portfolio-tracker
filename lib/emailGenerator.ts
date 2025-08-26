@@ -1,5 +1,6 @@
-import { PortfolioComparison, PortfolioData, Holding } from '@/types';
+import { PortfolioComparison, PortfolioData, Holding, PerformanceData } from '@/types';
 import { PortfolioComparisonService } from './portfolioComparison';
+import { TimezoneUtils } from './timezoneUtils';
 
 export class EmailSummaryGenerator {
   private comparisonService: PortfolioComparisonService;
@@ -17,6 +18,7 @@ export class EmailSummaryGenerator {
     alerts: string[];
   }): string {
     const date = new Date().toLocaleDateString('en-US', {
+      timeZone: 'America/New_York',
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -201,6 +203,33 @@ export class EmailSummaryGenerator {
             margin-bottom: 15px;
         }
         
+        .trade-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .trade-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .trade-badge.bought {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .trade-badge.sold {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
         .change-item {
             display: flex;
             justify-content: space-between;
@@ -278,35 +307,27 @@ export class EmailSummaryGenerator {
         
         <div class="summary-cards">
             <div class="summary-card">
-                <h3>Total Accounts</h3>
+                <h3>Total Models</h3>
                 <div class="value">${summary.totalAccounts}</div>
             </div>
             
-            <div class="summary-card">
-                <h3>Total Value</h3>
-                <div class="value">$${this.formatCurrency(summary.totalValue)}</div>
-            </div>
-            
-            <div class="summary-card ${summary.totalDayChange >= 0 ? 'positive' : 'negative'}">
-                <h3>Day Change</h3>
-                <div class="value">${summary.totalDayChange >= 0 ? '+' : ''}$${this.formatCurrency(summary.totalDayChange)}</div>
-            </div>
-            
-            <div class="summary-card ${summary.totalDayChangePercent >= 0 ? 'positive' : 'negative'}">
-                <h3>Day Change %</h3>
-                <div class="value">${summary.totalDayChangePercent >= 0 ? '+' : ''}${summary.totalDayChangePercent.toFixed(2)}%</div>
+            <div class="summary-card ${this.calculateWeightedDayChange(summary.comparisons) >= 0 ? 'positive' : 'negative'}">
+                <h3>Portfolio Day Return</h3>
+                <div class="value">${this.calculateWeightedDayChange(summary.comparisons) >= 0 ? '+' : ''}${this.calculateWeightedDayChange(summary.comparisons).toFixed(2)}%</div>
             </div>
         </div>
+        
+        ${this.generateModelsPerformanceTable(summary.comparisons)}
         
         ${this.generateAlertsSection(summary.alerts)}
         
         <div class="accounts">
-            <h2>Account Details</h2>
+            <h2>Account Performance Details</h2>
             ${summary.comparisons.map(comparison => this.generateAccountSection(comparison)).join('')}
         </div>
         
         <div class="footer">
-            <p>Generated on ${new Date().toLocaleString()} by Evans Family Wealth Portfolio Tracker</p>
+            <p>Generated on ${TimezoneUtils.getCurrentESTString()} by Evans Family Wealth Portfolio Tracker</p>
             <p style="margin-top: 15px;">
                 <a href="${process.env.VERCEL_URL || 'https://portfolio-tracker-iygxspgfx-glen-evans-projects.vercel.app'}" 
                    style="background: #2c3e50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
@@ -355,7 +376,7 @@ export class EmailSummaryGenerator {
                   <div style="font-size: 14px; opacity: 0.8;">${today.accountNumber}</div>
               </div>
               <div style="text-align: right;">
-                  <div>$${this.formatCurrency(today.totalValue)}</div>
+                  <div class="${today.dayChangePercent >= 0 ? 'positive' : 'negative'}" style="font-size: 18px; font-weight: bold;">${today.dayChangePercent >= 0 ? '+' : ''}${today.dayChangePercent.toFixed(2)}%</div>
                   <div style="font-size: 14px; opacity: 0.8;">${today.holdings.length} holdings</div>
               </div>
           </div>
@@ -363,32 +384,32 @@ export class EmailSummaryGenerator {
           <div class="account-body">
               <div class="performance-grid">
                   <div class="performance-item">
-                      <div class="label">Day Change</div>
-                      <div class="value ${today.dayChange >= 0 ? 'positive' : 'negative'}">
-                          ${today.dayChange >= 0 ? '+' : ''}$${this.formatCurrency(today.dayChange)}
-                      </div>
-                  </div>
-                  
-                  <div class="performance-item">
-                      <div class="label">Day Change %</div>
+                      <div class="label">Day Return</div>
                       <div class="value ${today.dayChangePercent >= 0 ? 'positive' : 'negative'}">
                           ${today.dayChangePercent >= 0 ? '+' : ''}${today.dayChangePercent.toFixed(2)}%
                       </div>
                   </div>
                   
-                  ${yesterday ? `
-                  <div class="performance-item">
-                      <div class="label">Since Yesterday</div>
-                      <div class="value ${metrics.totalValueChange >= 0 ? 'positive' : 'negative'}">
-                          ${metrics.totalValueChange >= 0 ? '+' : ''}$${this.formatCurrency(metrics.totalValueChange)}
-                      </div>
-                  </div>
-                  ` : ''}
-                  
                   <div class="performance-item">
                       <div class="label">Holdings</div>
                       <div class="value">${today.holdings.length}</div>
                   </div>
+                  
+                  ${this.getModelPerformanceMetrics(today.holdings).length > 0 ? `
+                  <div class="performance-item">
+                      <div class="label">1M Return</div>
+                      <div class="value ${this.getModelPerformanceMetrics(today.holdings)[0]?.return1Month >= 0 ? 'positive' : 'negative'}">
+                          ${this.getModelPerformanceMetrics(today.holdings)[0]?.return1Month >= 0 ? '+' : ''}${(this.getModelPerformanceMetrics(today.holdings)[0]?.return1Month || 0).toFixed(2)}%
+                      </div>
+                  </div>
+                  
+                  <div class="performance-item">
+                      <div class="label">3M Return</div>
+                      <div class="value ${this.getModelPerformanceMetrics(today.holdings)[0]?.return3Month >= 0 ? 'positive' : 'negative'}">
+                          ${this.getModelPerformanceMetrics(today.holdings)[0]?.return3Month >= 0 ? '+' : ''}${(this.getModelPerformanceMetrics(today.holdings)[0]?.return3Month || 0).toFixed(2)}%
+                      </div>
+                  </div>
+                  ` : ''}
               </div>
               
               ${this.generateTopPerformersSection(metrics.topGainers, metrics.topLosers)}
@@ -413,7 +434,7 @@ export class EmailSummaryGenerator {
                   ${topGainers.map(holding => `
                   <div class="change-item">
                       <span>${holding.symbol}</span>
-                      <span class="positive">+$${this.formatCurrency(holding.dayChange)} (${holding.dayChangePercent.toFixed(2)}%)</span>
+                      <span class="positive">+${holding.dayChangePercent.toFixed(2)}%</span>
                   </div>
                   `).join('')}
               </div>
@@ -427,7 +448,7 @@ export class EmailSummaryGenerator {
                   ${topLosers.map(holding => `
                   <div class="change-item">
                       <span>${holding.symbol}</span>
-                      <span class="negative">$${this.formatCurrency(holding.dayChange)} (${holding.dayChangePercent.toFixed(2)}%)</span>
+                      <span class="negative">${holding.dayChangePercent.toFixed(2)}%</span>
                   </div>
                   `).join('')}
               </div>
@@ -457,13 +478,18 @@ export class EmailSummaryGenerator {
           <h4>📋 Portfolio Changes</h4>
           
           ${changes.newHoldings.length > 0 ? `
-          <div style="margin-bottom: 15px;">
-              <strong style="color: #27ae60;">➕ New Holdings (${changes.newHoldings.length})</strong>
-              <div class="change-list">
+          <div style="margin-bottom: 20px;">
+              <strong style="color: #27ae60; font-size: 16px;">🟢 BOUGHT TODAY</strong>
+              <div class="trade-badges" style="margin-top: 10px;">
+                  ${changes.newHoldings.map(holding => `
+                  <span class="trade-badge bought">${holding.symbol}</span>
+                  `).join('')}
+              </div>
+              <div class="change-list" style="background: #f8fff8; border-left: 4px solid #27ae60;">
                   ${changes.newHoldings.map(holding => `
                   <div class="change-item">
                       <span>${holding.symbol} - ${holding.name}</span>
-                      <span>${holding.quantity} shares @ $${holding.price.toFixed(2)}</span>
+                      <span>${holding.quantity} shares</span>
                   </div>
                   `).join('')}
               </div>
@@ -471,9 +497,14 @@ export class EmailSummaryGenerator {
           ` : ''}
           
           ${changes.removedHoldings.length > 0 ? `
-          <div style="margin-bottom: 15px;">
-              <strong style="color: #e74c3c;">➖ Removed Holdings (${changes.removedHoldings.length})</strong>
-              <div class="change-list">
+          <div style="margin-bottom: 20px;">
+              <strong style="color: #e74c3c; font-size: 16px;">🔴 SOLD TODAY</strong>
+              <div class="trade-badges" style="margin-top: 10px;">
+                  ${changes.removedHoldings.map(holding => `
+                  <span class="trade-badge sold">${holding.symbol}</span>
+                  `).join('')}
+              </div>
+              <div class="change-list" style="background: #fff8f8; border-left: 4px solid #e74c3c;">
                   ${changes.removedHoldings.map(holding => `
                   <div class="change-item">
                       <span>${holding.symbol} - ${holding.name}</span>
@@ -508,6 +539,117 @@ export class EmailSummaryGenerator {
     });
   }
 
+  public calculateWeightedDayChange(comparisons: PortfolioComparison[]): number {
+    let totalValue = 0;
+    let weightedReturn = 0;
+
+    for (const comparison of comparisons) {
+      const accountValue = comparison.today.totalValue;
+      const accountReturn = comparison.today.dayChangePercent;
+      
+      totalValue += accountValue;
+      weightedReturn += accountValue * accountReturn;
+    }
+
+    return totalValue > 0 ? weightedReturn / totalValue : 0;
+  }
+
+  private generateModelsPerformanceTable(comparisons: PortfolioComparison[]): string {
+    const modelsData = this.extractModelsPerformanceData(comparisons);
+    
+    if (modelsData.length === 0) {
+      return `
+        <div style="margin-bottom: 30px;">
+          <h2>📈 Models Performance</h2>
+          <p style="color: #666; font-style: italic;">No performance data available for models.</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="margin-bottom: 30px;">
+        <h2>📈 Models Performance</h2>
+        <table class="holdings-table" style="background: white;">
+          <thead>
+            <tr>
+              <th>Model Name</th>
+              <th>1 Day</th>
+              <th>1 Month</th>
+              <th>3 Month</th>
+              <th>6 Month</th>
+              <th>12 Month</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${modelsData.map(model => `
+              <tr>
+                <td style="font-weight: bold;">${model.name}</td>
+                <td class="${model.dayReturn >= 0 ? 'positive' : 'negative'}">${model.dayReturn >= 0 ? '+' : ''}${model.dayReturn.toFixed(2)}%</td>
+                <td class="${model.return1Month >= 0 ? 'positive' : 'negative'}">${model.return1Month >= 0 ? '+' : ''}${model.return1Month.toFixed(2)}%</td>
+                <td class="${model.return3Month >= 0 ? 'positive' : 'negative'}">${model.return3Month >= 0 ? '+' : ''}${model.return3Month.toFixed(2)}%</td>
+                <td class="${model.return6Month >= 0 ? 'positive' : 'negative'}">${model.return6Month >= 0 ? '+' : ''}${model.return6Month.toFixed(2)}%</td>
+                <td class="${model.return12Month >= 0 ? 'positive' : 'negative'}">${model.return12Month >= 0 ? '+' : ''}${model.return12Month.toFixed(2)}%</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  private extractModelsPerformanceData(comparisons: PortfolioComparison[]): Array<{
+    name: string;
+    dayReturn: number;
+    return1Month: number;
+    return3Month: number;
+    return6Month: number;
+    return12Month: number;
+  }> {
+    const modelsMap = new Map();
+
+    for (const comparison of comparisons) {
+      // Extract model name from account name (assuming format like "Model Name - Account")
+      const modelName = comparison.today.accountName.split(' - ')[0] || comparison.today.accountName;
+      
+      // Get performance data from the first holding with performance data
+      const holdingWithPerformance = comparison.today.holdings.find(h => h.performance);
+      
+      if (holdingWithPerformance?.performance) {
+        const perf = holdingWithPerformance.performance;
+        modelsMap.set(modelName, {
+          name: modelName,
+          dayReturn: comparison.today.dayChangePercent,
+          return1Month: perf.return1Month || 0,
+          return3Month: perf.return3Month || 0,
+          return6Month: perf.return6Month || 0,
+          return12Month: perf.return12Month || 0,
+        });
+      } else {
+        // Fallback to day change only if no performance data
+        if (!modelsMap.has(modelName)) {
+          modelsMap.set(modelName, {
+            name: modelName,
+            dayReturn: comparison.today.dayChangePercent,
+            return1Month: 0,
+            return3Month: 0,
+            return6Month: 0,
+            return12Month: 0,
+          });
+        }
+      }
+    }
+
+    return Array.from(modelsMap.values());
+  }
+
+  private getModelPerformanceMetrics(holdings: Holding[]): PerformanceData[] {
+    const performanceData = holdings
+      .map(h => h.performance)
+      .filter((p): p is PerformanceData => p !== undefined);
+    
+    return performanceData;
+  }
+
   generateTextSummary(summary: {
     totalAccounts: number;
     totalValue: number;
@@ -516,13 +658,12 @@ export class EmailSummaryGenerator {
     comparisons: PortfolioComparison[];
     alerts: string[];
   }): string {
-    const date = new Date().toLocaleDateString();
+    const date = TimezoneUtils.getDateStringEST();
     let text = `Portfolio Summary for ${date}\n`;
     text += '='.repeat(50) + '\n\n';
     
-    text += `Total Portfolio Value: $${this.formatCurrency(summary.totalValue)}\n`;
-    text += `Day Change: ${summary.totalDayChange >= 0 ? '+' : ''}$${this.formatCurrency(summary.totalDayChange)} (${summary.totalDayChangePercent.toFixed(2)}%)\n`;
-    text += `Accounts Tracked: ${summary.totalAccounts}\n\n`;
+    text += `Portfolio Day Return: ${this.calculateWeightedDayChange(summary.comparisons) >= 0 ? '+' : ''}${this.calculateWeightedDayChange(summary.comparisons).toFixed(2)}%\n`;
+    text += `Models Tracked: ${summary.totalAccounts}\n\n`;
 
     if (summary.alerts.length > 0) {
       text += 'ALERTS:\n';
@@ -535,8 +676,7 @@ export class EmailSummaryGenerator {
 
     summary.comparisons.forEach((comparison, index) => {
       text += `${index + 1}. ${comparison.today.accountName}\n`;
-      text += `   Value: $${this.formatCurrency(comparison.today.totalValue)}\n`;
-      text += `   Day Change: ${comparison.today.dayChange >= 0 ? '+' : ''}$${this.formatCurrency(comparison.today.dayChange)} (${comparison.today.dayChangePercent.toFixed(2)}%)\n`;
+      text += `   Day Return: ${comparison.today.dayChangePercent >= 0 ? '+' : ''}${comparison.today.dayChangePercent.toFixed(2)}%\n`;
       text += `   Holdings: ${comparison.today.holdings.length}\n\n`;
     });
 
